@@ -8,12 +8,14 @@ import cl.irondisk.backend.exception.CredencialesInvalidasException;
 import cl.irondisk.backend.model.Usuario;
 import cl.irondisk.backend.repository.UsuarioRepository;
 import cl.irondisk.backend.security.JwtService;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// Inicio de sesion y registro. Si las credenciales fallan se responde siempre el mismo mensaje
+// Inicio de sesion, registro y renovacion de tokens. Si las credenciales fallan se responde siempre el mismo mensaje
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -37,6 +39,30 @@ public class AuthService {
     @Transactional
     public AuthResponse registro(RegistroRequest req) {
         return emitirTokens(usuarioService.crearCliente(req));
+    }
+
+    // Recibe un token de renovacion valido y entrega un par de tokens nuevo
+    public AuthResponse refresh(String refreshToken) {
+        Claims claims;
+        try {
+            claims = jwtService.leer(refreshToken);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new CredencialesInvalidasException("Tu sesión expiró, vuelve a iniciar sesión");
+        }
+        // Un token de acceso no sirve para renovar la sesion
+        if (!JwtService.TIPO_REFRESH.equals(claims.get(JwtService.CLAIM_TIPO))) {
+            throw new CredencialesInvalidasException("El token enviado no es un token de renovación");
+        }
+        Usuario u = usuarioRepo.findByCorreoIgnoreCase(claims.getSubject())
+                .orElseThrow(() -> new CredencialesInvalidasException("El usuario de la sesión ya no existe"));
+        return emitirTokens(u);
+    }
+
+    // Datos del usuario dueño del token
+    public UsuarioResponse usuarioActual(String correo) {
+        return usuarioRepo.findByCorreoIgnoreCase(correo)
+                .map(UsuarioResponse::from)
+                .orElseThrow(() -> new CredencialesInvalidasException("El usuario de la sesión ya no existe"));
     }
 
     private AuthResponse emitirTokens(Usuario u) {
