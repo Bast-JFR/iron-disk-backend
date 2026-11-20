@@ -14,4 +14,6 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     List<Producto> findAllByOrderByIdAsc();
 
     boolean existsByCategoriaId(Long categoriaId);
+
+    long countByCategoriaId(Long categoriaId);
 }
