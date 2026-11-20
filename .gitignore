@@ -1,0 +1,28 @@
+# Compilacion de Maven
+target/
+.mvn/wrapper/maven-wrapper.jar
+HELP.md
+
+# Claves y contrasenas locales (se deja un .env.example con valores de ejemplo)
+.env
+
+# Editores
+.idea
+*.iws
+*.iml
+*.ipr
+.vscode/
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Registros
+*.log
