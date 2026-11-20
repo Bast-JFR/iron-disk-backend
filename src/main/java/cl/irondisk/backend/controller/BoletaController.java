@@ -33,6 +33,7 @@ public class BoletaController {
             description = "Recibe solo el producto y la cantidad, el precio y el total los calcula el backend. "
                     + "Si la petición trae token, la boleta queda asociada al usuario.")
     @ApiResponse(responseCode = "404", description = "Un producto no existe")
+    @ApiResponse(responseCode = "409", description = "Stock insuficiente, no se descuenta nada")
     public BoletaResponse comprar(@Valid @RequestBody CompraRequest req,
                                   @Parameter(hidden = true) @AuthenticationPrincipal UserDetails usuario) {
         return service.crearCompra(req, usuario != null ? usuario.getUsername() : null);

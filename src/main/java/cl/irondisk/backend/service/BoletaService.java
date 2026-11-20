@@ -5,6 +5,7 @@ import cl.irondisk.backend.dto.CompraRequest;
 import cl.irondisk.backend.dto.ItemCompraRequest;
 import cl.irondisk.backend.exception.DatosInvalidosException;
 import cl.irondisk.backend.exception.RecursoNoEncontradoException;
+import cl.irondisk.backend.exception.ReglaNegocioException;
 import cl.irondisk.backend.model.Boleta;
 import cl.irondisk.backend.model.DetalleBoleta;
 import cl.irondisk.backend.model.EstadoBoleta;
@@ -21,7 +22,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 // Logica de negocio de las compras y las boletas
-// Reglas: el precio siempre sale de la base de datos y nunca del frontend, y el total lo calcula el backend
+// Reglas: el precio siempre sale de la base de datos y nunca del frontend, el total lo calcula el backend
+// y la compra descuenta el stock, todo o nada
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -58,6 +60,14 @@ public class BoletaService {
         for (Map.Entry<Long, Integer> linea : agruparPorProducto(req).entrySet()) {
             Producto producto = productoRepo.findById(linea.getKey())
                     .orElseThrow(() -> new RecursoNoEncontradoException("El producto " + linea.getKey() + " no existe"));
+
+            // Si falta stock de un producto no se compra nada, la transaccion deshace lo ya descontado
+            if (producto.getStock() < linea.getValue()) {
+                throw new ReglaNegocioException("Stock insuficiente para " + producto.getNombre()
+                        + " (disponible: " + producto.getStock() + ", solicitado: " + linea.getValue() + ")");
+            }
+            producto.setStock(producto.getStock() - linea.getValue());
+
             DetalleBoleta detalle = new DetalleBoleta(producto, linea.getValue(), producto.precioFinal());
             boleta.agregarDetalle(detalle);
             total += detalle.getSubtotal();
