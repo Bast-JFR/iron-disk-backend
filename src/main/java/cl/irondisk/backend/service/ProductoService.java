@@ -26,12 +26,23 @@ public class ProductoService {
     private final CategoriaRepository categoriaRepo;
     private final DetalleBoletaRepository detalleRepo;
 
-    public List<ProductoResponse> listar() {
-        return productoRepo.findAllByOrderByIdAsc().stream().map(ProductoResponse::from).toList();
+    // Catalogo completo, o filtrado por categoria, formato y texto en el nombre o el artista
+    public List<ProductoResponse> listar(Long categoriaId, String formato, String texto) {
+        String formatoFiltro = formato == null || formato.isBlank() ? null : formato.trim();
+        String textoFiltro = texto == null || texto.isBlank() ? null : "%" + texto.trim().toLowerCase() + "%";
+        return productoRepo.buscar(categoriaId, formatoFiltro, textoFiltro).stream().map(ProductoResponse::from).toList();
     }
 
     public ProductoResponse obtener(Long id) {
         return ProductoResponse.from(buscar(id));
+    }
+
+    public List<ProductoResponse> ofertas() {
+        return productoRepo.findByOfertaPorcentajeGreaterThanOrderByIdAsc(0).stream().map(ProductoResponse::from).toList();
+    }
+
+    public List<ProductoResponse> criticos() {
+        return productoRepo.findCriticos().stream().map(ProductoResponse::from).toList();
     }
 
     @Transactional
