@@ -117,8 +117,15 @@ Todas las rutas comienzan con `http://localhost:8080/api/v1`.
 | `GET /productos/ofertas`, `GET /productos/{id}` | Público | Ofertas y detalle de un producto |
 | `GET /productos/criticos` | ADMIN | Productos con stock igual o menor a su stock crítico |
 | `POST /productos`, `PUT` y `DELETE /productos/{id}` | ADMIN | Administrar productos |
+| `POST /boletas` | Público | Registra una compra, el backend calcula el total y descuenta el stock |
+| `GET /boletas/mias` | Con sesión | Compras del usuario con sesión |
+| `GET /boletas` | ADMIN y VENDEDOR | Lista todas las boletas |
+| `GET /boletas/{id}` | Con sesión | Boleta con su detalle, un cliente solo ve las suyas |
+| `GET /boletas/usuario/{usuarioId}` | ADMIN | Historial de compras de un usuario |
+| `PATCH /boletas/{id}/estado` | ADMIN | Cambia el estado, al anular una boleta el stock vuelve al inventario |
+| `GET /reportes/resumen` | ADMIN | Total vendido, boletas, ticket promedio y discos más vendidos, sin contar las anuladas |
 
-La planilla con el detalle de cada endpoint está en `docs/Documentacion-APIs-IronDisk.xlsx`.
+La planilla con el detalle de cada endpoint está en `docs/Documentacion-APIs-IronDisk.xlsx` y la colección de Postman con los casos de prueba está en `docs/postman/IronDisk.postman_collection.json`.
 
 ### Respuestas de error
 
@@ -159,6 +166,11 @@ La API no guarda sesiones en el servidor. La clave del JWT y la contraseña de l
 | Un administrador no puede eliminarse a sí mismo ni eliminar un usuario con compras | `UsuarioService` |
 | Un access token no sirve para renovar la sesión | `AuthService` |
 | Código de producto único y categoría existente | `ProductoService` |
+| El precio y el total de una compra los calcula el backend, el frontend solo manda el producto y la cantidad | `BoletaService` |
+| Si falta stock de un producto no se crea la boleta ni se descuenta nada | `BoletaService` |
+| Anular una boleta devuelve el stock y una boleta anulada no se puede modificar | `BoletaService` |
+| Un cliente solo puede ver sus propias boletas | `BoletaService` |
+| Las boletas anuladas no se cuentan en el resumen de ventas | `ReporteService` |
 | Un producto que ya se vendió no se elimina | `ProductoService` |
 | El nombre de la categoría es único y no se elimina si tiene productos | `CategoriaService` |
 
