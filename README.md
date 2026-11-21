@@ -13,7 +13,53 @@ negocio en el servidor y protege el acceso según el rol de cada usuario.
 | API REST con CRUD | Controladores en `controller`, con rutas versionadas `/api/v1/...` |
 | Documentación | Swagger en `http://localhost:8080/swagger-ui.html` |
 | Seguridad | Spring Security con JWT (token de acceso de 15 minutos y de renovación de 7 días) y roles |
-| Pruebas | JUnit 5 y Mockito sobre los servicios |
+| Pruebas | JUnit 5 y Mockito sobre los servicios (17 pruebas) y una colección de Postman con 14 casos |
+
+## Qué se hizo en la Evaluación 3
+
+Se construyó el backend completo y se conectó al frontend React, que dejó de usar datos locales.
+
+- **Base de datos:** MySQL 8.4 en Docker con 5 tablas. Al primer inicio se cargan datos de ejemplo.
+- **Seguridad:** Spring Security sin sesiones en el servidor, con JWT (acceso de 15 minutos y renovación de 7
+  días), contraseñas con BCrypt y tres roles: ADMIN, VENDEDOR y CLIENTE. Los permisos de cada ruta están en
+  `SecurityConfig`.
+- **Catálogo y usuarios:** CRUD de productos, categorías y usuarios con validaciones y errores uniformes.
+- **Compras y boletas:** el cliente envía solo el producto y la cantidad; el backend busca el precio en la base,
+  aplica la oferta, calcula el total y descuenta el stock todo o nada en una transacción. Anular una boleta
+  devuelve el stock. Un cliente solo ve sus propias boletas.
+- **Reportes:** resumen de ventas para el administrador (total vendido, boletas, ticket promedio y discos más
+  vendidos) sin contar las boletas anuladas.
+- **Documentación:** Swagger, una planilla con los 30 endpoints, el documento de integración, el manual de usuario
+  y la colección de Postman.
+- **Integración con el frontend:** axios con renovación automática de la sesión, permisos por rol en rutas, menú y
+  botones, checkout contra la API y panel de administración conectado.
+
+### Pruebas
+
+`./mvnw test` ejecuta 17 pruebas unitarias con JUnit 5 y Mockito, reemplazando los repositorios por mocks.
+No necesitan MySQL.
+
+| Clase | Pruebas | Qué verifica |
+|---|---|---|
+| `AuthServiceTest` | 2 | Clave incorrecta y correo inexistente dan el mismo mensaje, y un token de acceso no sirve para renovar la sesión |
+| `UsuarioServiceTest` | 2 | El registro público crea un cliente con la clave encriptada, y un administrador no puede eliminar su propia cuenta |
+| `ValidadorUsuarioTest` | 3 | RUN con dígito verificador correcto e incorrecto, y dominios de correo permitidos |
+| `ProductoServiceTest` | 2 | No se permite un código repetido ni se elimina un producto que aparece en boletas |
+| `CategoriaServiceTest` | 1 | No se elimina una categoría con productos |
+| `BoletaServiceTest` | 6 | Total con oferta, descuento de stock, compra sin stock, anulación, boleta anulada y boleta ajena |
+| `ReporteServiceTest` | 1 | El resumen no cuenta las boletas anuladas |
+
+### Postman
+
+La colección `docs/postman/IronDisk.postman_collection.json` tiene una carpeta de preparación, que inicia sesión
+con los tres roles, y los 14 casos de la guía (login, permisos por rol, validaciones, compra con y sin stock,
+renovación de sesión y token alterado), cada uno con sus verificaciones. Para ejecutarla con el backend encendido:
+
+```
+npx newman run docs/postman/IronDisk.postman_collection.json
+```
+
+También se puede importar en Postman y ejecutarla con el Runner.
 
 ## Tecnologías
 
@@ -83,6 +129,13 @@ src/main/java/cl/irondisk/backend/
 ├── security/     JWT, filtro de autenticación y permisos por rol
 ├── exception/    Excepciones propias y respuesta de error uniforme
 └── config/       Swagger y datos iniciales
+
+docs/
+├── Documentacion-APIs-IronDisk.xlsx            planilla con el detalle de los 30 endpoints
+├── Documentacion-APIs-e-Integracion-IronDisk.docx   API, integración con el frontend y resultados de Postman
+├── Manual-Usuario-IronDisk.docx                manual de usuario con capturas de los tres roles
+├── ERS-IronDisk-V3.docx                        especificación de requisitos, versión 3
+└── postman/                                    colección de Postman con los casos de prueba
 ```
 
 Una petición recorre siempre el mismo camino:
@@ -180,4 +233,21 @@ El frontend de la tienda está en otro repositorio: https://github.com/Bast-JFR/
 
 ## Equipo
 
-Bastián y Renato.
+Bastián y Renato. El trabajo se dividió en dos partes y cada una se desarrolló en ramas por funcionalidad,
+unidas a `main` al terminar.
+
+| Rama | Responsable | Contenido |
+|---|---|---|
+| `feature/backend-base` | Bastián | Proyecto Spring Boot, conexión a MySQL con Docker, README y .gitignore |
+| `feature/backend-modelo` | Bastián | Entidades, repositorios y manejo de errores uniforme |
+| `feature/backend-seguridad` | Bastián | Registro y login con JWT, renovación de sesión, permisos por rol y gestión de usuarios |
+| `feature/backend-catalogo` | Bastián | CRUD de categorías y productos con sus reglas, búsqueda, ofertas y productos críticos |
+| `feature/backend-swagger-datos` | Bastián | Documentación con Swagger y datos iniciales de la tienda |
+| `feature/backend-pruebas-a` | Bastián | Pruebas de usuarios y login, y de productos y categorías |
+| `feature/backend-documentos-a` | Bastián | ERS versión 3, documentación de APIs y README con endpoints y cuentas de prueba |
+| `feature/backend-ventas` | Renato | Compras y boletas con descuento de stock |
+| `feature/backend-reportes` | Renato | Resumen de ventas para el administrador |
+| `feature/backend-pruebas-b` | Renato | Pruebas de compras y reportes |
+| `feature/docs-b` | Renato | Colección de Postman, endpoints de ventas en la documentación, manual de usuario y documento de integración |
+
+La parte del frontend está en el repositorio de la tienda, con sus propias ramas `feature/react-integracion-*`.
